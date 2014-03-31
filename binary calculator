@@ -1,0 +1,245 @@
+def padWithZeros(binary, bits):
+    '''extend digits for a positive number
+       give binary number as string'''
+    length = len(binary)
+    num_of_zeros = bits - length
+    for i in range(0, num_of_zeros):
+        binary = '0' + binary
+    return binary
+
+def addTwoDigits(bin1, bin2):
+    '''give binary number as strings'''
+    if((bin1 == '1' and bin2 == '1')or(bin1 == '0' and bin2 == '0')):
+        return '0'
+    if((bin1 == '1' and bin2 == '0')or(bin1 == '0' and bin2 == '1')):
+        return '1'
+
+def getCarryOver(bin1, bin2):
+    if(bin1 == '1' and bin2 == '1'):
+        return '1'
+    else:
+        return '0'
+
+def addBin(bin1, bin2): #bin1 and bin2 are 2s complement format
+    '''give binary number as strings'''
+    bits = 8  #No bits argument passed into the function, works with 8 digits by default
+    bin4 = ""
+    if(len(bin1) < bits):
+        bin1 = padWithZeros(bin1, bits)
+    if(len(bin2) < bits):
+        bin2 = padWithZeros(bin2, bits)
+    carry = '0'
+    for ch in range(0, bits):
+        digit = -1 - ch
+        bin3 = addTwoDigits(bin1[digit], bin2[digit]) 
+        bin3 = addTwoDigits(bin3,carry)
+        if carry == '1' and bin1[digit] == '0' and bin2[digit] == '1':
+            carry = '1'
+        elif carry == '1' and bin1[digit] == '1' and bin2[digit] == '0':
+            carry = '1'
+        else:
+            carry = getCarryOver(bin1[digit], bin2[digit])
+        bin4 = bin3 + bin4
+    return bin4
+
+def findSign(num):
+    '''give a decimal number'''
+    if(num < 0):
+        return 1
+    else:
+        return 0
+
+def flipBits(binaryNumber):
+    '''give binary number as string'''
+    length = len(binaryNumber)
+    flipString = ""
+    for ch in range(0,length):
+        if int(binaryNumber[ch]) == 1:
+            flipnumber = 0
+        else:
+            flipnumber = 1
+        flipString =  flipString + str(flipnumber)
+    return flipString
+
+def convert2Bin(decimal, bits):
+    '''give a positive decimal number'''
+    binary_number = ""
+    if(decimal == 0):
+        zeroNumber = padWithZeros(binary_number, bits)
+        return zeroNumber #special condition for zero
+    while decimal/2 != 0:
+        remainder = decimal%2
+        binary_number = str(remainder) + binary_number
+        decimal = decimal/2
+    binary_number = '1' + binary_number
+    if len(binary_number) < bits:
+        binary_number = padWithZeros(binary_number, bits)
+    else:
+        binary_number = binary_number[(len(binary_number) - bits):]
+    return binary_number
+
+def convert2TwosComplement(decimal, bits):  #input number, number of bits
+    '''give a deciaml number'''
+    if findSign(decimal)== 0:
+        return convert2Bin(decimal,bits)
+    else:
+        flipString = flipBits(convert2Bin(abs(decimal),bits))
+        return addBin(flipString, '00000001')
+
+def negate(bin1):   #input string bin1
+    return addBin(flipBits(bin1),'00000001')
+
+def subBin(bin1, bin2): #input string bin1 and bin2
+    negate_bin2 = negate(bin2)
+    return addBin(bin1, negate_bin2)
+
+def multiplyBin(bin1, bin2): #use 2s complement addtion to multiplyBin 
+    multi_result = ''
+    if bin2 == '10000000': #2s complement of 10000000 remain the same of 1000000
+        total_times = 128
+        change_sign = True
+    elif bin2[0] == '1':
+        bin2 = negate(bin2)
+        total_times = convertBin2Dec(bin2)
+        change_sign = True
+    elif bin2[0] == '0':
+        total_times = convertBin2Dec(bin2)
+        change_sign = False
+    if total_times == 0: return '00000000'
+    else:
+        for time in range(0, total_times):
+            multi_result = addBin(multi_result, bin1)
+        if change_sign:
+            multi_result = negate(multi_result)
+        return multi_result
+
+def getQuotientBin(bin1, bin2): #use 2s complement subBin to getQuotientBin
+    bits = 8
+    quotient = -1
+    if bin2 == '00000000':   ##out of range justification 
+        print "\nDivisor cannot be zero"
+        return False
+    if bin1 == '10000000':   ##out of range justification: On converting -128 to 128 it goes out of range
+        print "\nCalculation out of range"
+        return False
+    else:
+        if bin1[0] == '1' and bin2[0] == '0':
+            change_sign = True
+            bin1 = negate(bin1)
+        elif bin1[0] == '0' and bin2[0] == '1':
+            change_sign = True
+            bin2 = negate(bin2)
+        elif bin1[0] == '1' and bin2[0] == '1':
+            change_sign = False
+            bin1 = negate(bin1)
+            bin2 = negate(bin2)
+        else: change_sign = False
+        while bin1[0] == '0':
+            bin1 = subBin(bin1, bin2)
+            quotient += 1
+        if change_sign:
+            quotient = negate(convert2Bin(quotient, bits))
+        else:
+            quotient = convert2Bin(quotient, bits)
+        return quotient
+
+def getRemainderBin(bin1, bin2):
+    quotient = getQuotientBin(bin1, bin2)
+    if quotient == False:
+        while quotient == False:
+            if bin2 == '00000000':
+                bin2 = input("Please reenter the second number in binary form ")
+            else:
+                bin1 = input("Please reenter the first number in binary form ")
+            quotient = getQuotientBin(bin1, bin2)
+    remainder = subBin(bin1,multiplyBin(bin2,quotient))
+    return remainder
+
+def convertBin2Dec(bin1):
+    bin1 = padWithZeros(bin1,8)
+    decimal = 0
+    for digit in range(0, len(bin1)-1):
+        decimal = decimal + int(bin1[len(bin1) - 1 - digit])*2**digit
+    decimal = decimal - int(bin1[0])*2**(len(bin1)-1)
+    return decimal
+
+def checkNumInRange(decimal, bits):
+    if decimal > 2**(bits-1)-1 or decimal < -2**(bits-1):
+        print "The decimal number", decimal, " entered is out of range."
+        return False
+    else:
+        return True
+
+def introductory():
+    print '''We are going to simulate an 8 bit computer for binary arithmetic.'''
+
+def isContinue():
+    continueSign = raw_input("\nDo you want to continue? Y/N ")
+    if continueSign == 'Y':
+        return True
+    if continueSign == 'N':
+        return False
+    print "Please enter Y/N "
+    return isContinue()
+
+def RangeOfNumberJustify(decimal_number):
+    bits = 8
+    Range_1 = checkNumInRange(decimal_number, bits)
+    while Range_1 == False:
+        decimal_number = input("\nPlease input the number in range -128 to 127 ")
+        Range_1 = checkNumInRange(decimal_number, bits)
+    return decimal_number    
+    
+def main():
+    introductory()
+    continueFlag = True
+    while continueFlag:
+        bits = 8
+        firstNumber = input("\nPlease input the first number in range -128 to 127 ")
+        firstNumber = RangeOfNumberJustify(firstNumber)
+        secondNumber = input("Please input the second number in range -128 to 127 ")       
+        secondNumber = RangeOfNumberJustify(secondNumber)
+        bin1 = convert2TwosComplement(firstNumber, bits)#use 2s complement format
+        bin2 = convert2TwosComplement(secondNumber, bits)
+        case = input('''\nPlease enter: 1 for addition, 2 for subtraction, 3 for multiplication \
+and 4 for division ''')
+        if case == 1:
+            binary_result = addBin(bin1, bin2)
+            number_result = convertBin2Dec(binary_result)
+            print "The result of", firstNumber, '+', secondNumber, 'is', binary_result, "in binary \
+form and", number_result, "in decimal form."
+        elif case == 2:
+            binary_result = subBin(bin1, bin2)
+            number_result = convertBin2Dec(binary_result)
+            print "The result of", firstNumber, '-', secondNumber, 'is', binary_result, "in binary \
+form and", number_result, "in decimal form."
+        elif case == 3:
+            binary_result = multiplyBin(bin1, bin2)
+            number_result = convertBin2Dec(binary_result)
+            print "The result of", firstNumber, '*', secondNumber, 'is', binary_result, "in binary \
+form and", number_result, "in decimal form"
+        elif case == 4:
+            binary_quotient = getQuotientBin(bin1, bin2)
+            while binary_quotient == False:
+                if(bin1 == '10000000'):
+                    firstNumber = input("Please reenter the first number ")
+                    if checkNumInRange(firstNumber, bits):
+                        bin1 = convert2TwosComplement(firstNumber, bits)
+                else:
+                    secondNumber = input("Please reenter the second number ")
+                    if checkNumInRange(secondNumber, bits):
+                        bin2 = convert2TwosComplement(secondNumber, bits)
+                binary_quotient = getQuotientBin(bin1, bin2)
+            binary_remainder = getRemainderBin(bin1, bin2)
+            number_quotient = convertBin2Dec(binary_quotient)
+            number_remainder = convertBin2Dec(binary_remainder)
+            print "In binary form, the quotient is", binary_quotient, "and the remainder is \
+", binary_remainder
+            print "In number form, the quotient is", number_quotient, "and the remainder is \
+", number_remainder
+        else: print "\nIllegal choice."
+        continueFlag = isContinue()
+
+if __name__ == '__main__':
+
+    main()
