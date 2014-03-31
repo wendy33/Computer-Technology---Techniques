@@ -1,0 +1,423 @@
+# spellChecker.py is a spell-checking tool
+# that interactively corrects misspelled words in a document.
+# The user gets to select the correct spelling of a misspelled word
+# from a list of candidates provided by the program.
+from math import *
+
+
+#this is the fun part to replace each incorrect word
+#with the 'top' word automatically
+def autoCorrection(fileName):
+    '''
+This function takes in one single argument, a filename,
+and then autocorrects the file. 
+'''
+    mode = 'auto'
+    #'auto' refers to the mode that automatically corrects the file with top word
+    doAccordingtoMode(mode, fileName)    
+    
+
+def main():
+    printWelcome()
+    fileName = getFileNametoCheck()
+    mode = 'auto'
+    #'manual' refers to the mode that interacts with the user
+    doAccordingtoMode(mode, fileName)
+    
+
+def doAccordingtoMode(mode, fileName):
+    '''
+This function does the corresponding things according to the mode: 'manual' or 'auto'.
+'''    
+    fin = open(fileName)
+    if mode == 'manual':
+        fout = open((fileName.split('.'))[0]+'-chk.txt','w')
+    elif mode == 'auto':
+        fout = open('pairProgramChk.txt','w')     
+    line = fin.readline()
+    while line:
+        opline = line.split()
+        wordinline = ''
+        for word in opline:
+            opword = ignoreCaseAndPunc(word)
+            if findWordInDictionary(opword, 'engDictionary.txt'):
+                newword = word
+                
+            else:
+                if mode == 'manual':
+                    newword = changeWord(opword, getCombinedWordSuggestions(opword, 'engDictionary.txt'))
+                elif mode == 'auto':
+                    newword = useTop1Word(word, 'engDictionary.txt')                    
+            wordinline = wordinline + ' ' + newword
+        wordinline = wordinline + '\n'
+        fout.writelines(wordinline)
+        #print 'done'
+        line = fin.readline()
+    fin.close()
+    fout.close()
+    print '''
+All spell-checking work has done!
+Thanks for using CIT590 spell-checking tool~
+'''
+    
+
+
+def printWelcome():
+    '''
+Print the welcome message.
+'''
+    print'''
+Welcome to CIT590 spell-checking tool!
+A list of correctly spelled English words is provided
+as a reference in the file called engDictionary.txt
+You can select the correct spelling of a misspelled word
+from a list of candidates provided by the program.
+Happy checking~
+'''
+
+    
+def getFileNametoCheck():
+    '''
+This function is used to get the filename to check spelling
+'''
+    fileName = raw_input('\nPlease enter the name of the file to check spelling, i.e "jabberwocky.txt"\n')
+    done = False
+    while not done:
+        try:
+            f = open(fileName)
+            done = True
+        except IOError, e:
+            print 'said file does not exist'
+            fileName = raw_input('\nPlease enter the name of the file to check spelling, i.e "jabberwocky.txt"\n')
+    return fileName
+    
+
+def ignoreCaseAndPunc(word):
+    #1
+    '''
+This function will return a word that entirely in lower case
+and all punctuation removed.
+'''
+    oldword = word[:]
+    word = ''
+    for i in oldword:
+        if i in ',;:?!.':
+            pass
+        else:
+            word = word + i.lower()
+    return word
+
+
+def findWordInDictionary(word, fileName):
+    #2
+    '''
+Check and see if the word is present in the filleName.
+Both word and fileName are going to be strings.
+This function just returns the boolean value True or False.
+'''
+    word = ignoreCaseAndPunc(word)
+    f = open(fileName)
+    line = f.readline()
+    while line:
+        if word == line.lower().strip():
+            f.close()
+            return True
+        else:
+            line = f.readline()
+    f.close()
+    return False
+
+
+def getWordsOfSimLength(word, fileName, n):
+    #3
+    '''
+Given a word, this function will return a list of words
+from the fileName that all have the length +/- a value n.
+'''
+    word = ignoreCaseAndPunc(word)
+    n = abs(n)
+    length = len(word)
+    f = open(fileName)
+    line = f.readline()
+    ListOfSimLength = []
+    while line:
+        wordInFile = line.lower().strip()
+        if len(wordInFile) in range(length - n, length + n + 1):
+            ListOfSimLength.append(line.strip())
+        line = f.readline()
+    f.close()
+    return ListOfSimLength
+    
+
+def getWordsWithSameStart(word, wordList, n):
+    #4
+    '''
+Given a word and a list of words, this function will
+return a list of words that have at least the first n characters the same.
+'''
+    word = ignoreCaseAndPunc(word)
+    listSameStart = []
+    for i in wordList:
+        icompare = i.lower()
+        if word[:n] == icompare[:n]:
+            listSameStart.append(i)
+    return listSameStart
+
+
+def getWordsWithSameEnd(word, wordList, n):
+    '''
+Given a word and a list of words, this function will
+return a list of words that have at least the last n characters the same.
+'''
+    word = ignoreCaseAndPunc(word)
+    word = word[::-1]
+    listSameEnd = []
+    for i in wordList:
+        icompare = i[::-1]
+        icompare = icompare.lower()
+        if word[:n] == icompare[:n]:
+            listSameEnd.append(i)
+    return listSameEnd
+
+
+def getWordsWithCommonLetters(word, wordList, n):
+    #5
+    '''
+Given a word, return a list of words that have n or more letters in common.
+'''
+    word = ignoreCaseAndPunc(word)
+    listCommonLetters = []
+    for i in wordList:
+        icompare = i.lower().strip()        
+        if len(set(icompare) & set(word)) >= n:
+            listCommonLetters.append(i)
+    return listCommonLetters
+
+
+def getLeftSimilarity(word1, word2):
+    '''
+Given two words, this function computes leftSimilarity.
+'''
+    word1 = word1.lower().strip()
+    word2 = word2.lower().strip()
+    len1 = len(word1)
+    len2 = len(word2)    
+    minlen = min(len1, len2)
+    count = 0
+    for i in range(0, minlen):
+        if word1[i] == word2[i]:
+            count = count + 1
+    return count
+
+
+def getRightSimilarity(word1, word2):
+    '''
+Given two words, this function computes rightSimilarity.
+'''
+    word1 = word1[::-1]
+    word2 = word2[::-1]
+    return getLeftSimilarity(word1, word2)
+
+
+def getSimilarityMetric(word1, word2):
+    #6
+    '''
+Given two words, this function computes
+two measures of similarity and returns the average.
+'''
+    return (getLeftSimilarity(word1, word2) + getRightSimilarity(word1, word2)) / 2.0
+
+    
+def getSimilarityDict(word, wordList):
+    #7
+    '''
+Given a single word, this function will go through every word
+in the list of words provided by wordList
+and create what we will call a similarityDictionary.
+'''
+    word = ignoreCaseAndPunc(word)
+    similarityDict = {}
+    for words in wordList:
+        similarityDict[words] = getSimilarityMetric(word, ignoreCaseAndPunc(words))
+    return similarityDict
+
+
+def getBestWords(similarityDictionary, n):
+    #8
+    '''
+This function takes a similarityDictionary
+and it returns the top n in terms of the similarity.
+'''
+    listOfTuples = similarityDictionary.items()
+    listOfTuples.sort(sortIn2D, reverse=True)
+    listOfFirstComponents = getListOfFirstComponents(listOfTuples)
+    return listOfFirstComponents[:n]
+
+
+def sortIn2D(tup1, tup2):
+    '''
+This function takes in two tuples both of which have two components
+and it does the comparison based on just the second component.
+'''
+    if tup1[-1] < tup2[-1]:
+        return -1
+    elif tup1[-1] == tup2[-1]:
+        return 0
+    else:
+        return 1
+
+
+def getListOfFirstComponents(tupleList):
+    '''
+It takes in a list of tuples and
+returns another list which has just the first components of the tuples.
+'''
+    listOfFirstComponents = []
+    for tuples in tupleList:
+        listOfFirstComponents.append(tuples[0])
+    return listOfFirstComponents
+
+
+def getWordSuggestionsV1(word, fileName, n, commonPercent, topN):
+    #9
+    '''
+Given an incorrect word, this function return a list of legal word suggestions.
+'''
+    wordsOfSimLengthList = getWordsOfSimLength(word, fileName, n)
+    minCommonNum = ceil(len(set(word)) * commonPercent / 100.0)
+    commonLettersList = getWordsWithCommonLetters(word, wordsOfSimLengthList, minCommonNum)
+    similarityDict = getSimilarityDict(word, commonLettersList)
+    topNList = getBestWords(similarityDict, topN)
+    return topNList
+
+def getWordSuggestionsV2(word, fileName, n, topN):
+    #10
+    '''
+Given an incorrect word, this function will return a list of word suggestions
+that can all be found the file provided by fileName
+based on the algorithm find words that are within +/- 1 in length with respect to the given word.
+'''
+    lst1 = getWordsOfSimLength(word, fileName, 1)
+    lst2 = []
+    lst3 = []
+    f = open(fileName)
+    line = f.readline()
+    while line:
+        wordList = []
+        I = 0
+        while I < 100 and line:
+            I = I + 1
+            wordList.append(line.strip())
+            line = f.readline()
+        lst2.extend(getWordsWithSameStart(word, wordList, n))
+        lst3.extend(getWordsWithSameEnd(word, wordList, n))
+    f.close()
+    lst = (set(lst1) & set(lst2)) & set(lst3)
+    wordList = list(lst)
+    similarityDictionary = getSimilarityDict(word, wordList)
+    sortedwordList = getBestWords(similarityDictionary, topN)
+    return sortedwordList
+
+
+def getCombinedWordSuggestions(word, fileName):
+    #11
+    '''
+This function will combine the list of suggestions provided by the two functions above
+in the following manner:
+Take 7 suggestions from each function.
+Use 75% as the threshold for the first algorithm
+'''
+    lst1 = getWordSuggestionsV1(word, fileName, 2, 75, 7)
+    lst2 = getWordSuggestionsV2(word, fileName, 1, 7)
+    lst1.extend(lst2)
+    lst = set(lst1)
+    wordList = list(lst)
+    similarityDictionary = getSimilarityDict(word, wordList)
+    length = len(similarityDictionary)
+    sortedwordList = getBestWords(similarityDictionary, length)
+    num = min(length, 10)
+    return sortedwordList[ : num]    
+
+
+def prettyPrint(lst):
+    #12
+    '''
+This is a purely output function just to help the user identify the
+suggestions with a number.
+'''
+    for i in range(1, len(lst)+1):
+        print str(i)+'. '+lst[i-1]
+
+
+def userChoice(misspellWord,lst):
+    '''
+This function is to get user's choice for changing the word.
+'''
+    print "The word", misspellWord, "is misspelled."
+    if len(lst) == 0:
+        print "There are 0 suggestions in our dictionary for this word."
+        UserChoice = raw_input("Press 'a' for accept as is, 't' for type in mannually.\n")
+        while UserChoice not in ['a','t']:
+            print "Invalid input. Please try again."
+            UserChoice = raw_input("Press 'a' for accept as is, 't' for type in mannually.\n")
+    else:
+        print "The following suggestions are available."
+        prettyPrint(lst)    
+        UserChoice = raw_input("Press 'r' for replace, 'a' for accept as is, 't' for type in mannually.\n")
+        while UserChoice not in ['r','a','t']:
+            print "Invalid input. Please try again."
+            UserChoice = raw_input("Press 'r' for replace, 'a' for accept as is, 't' for type in mannually.\n")
+    return UserChoice
+
+
+def changeWord(misspellWord,lst):
+    '''
+This function is to change words.
+'''
+    UserChoice = userChoice(misspellWord,lst)
+    if UserChoice == 'r':
+        replaceNum = raw_input("Enter the number corresponding to the word that you want to use for replacement.\n")
+        replacePool = []
+        for i in range(1,len(lst)+1):
+            replacePool.append(str(i))
+        while replaceNum not in replacePool:
+            replaceNum = raw_input("Invalid input. Enter the number corresponding to the word that you want to use for replacement.\n")
+        return lst[int(replaceNum)-1]
+    if UserChoice == 'a':
+        return misspellWord
+    else:
+        newWord = raw_input("Please type the word that will be used as the replacement in the output file.\n")
+        return newWord 
+
+
+def useTop1Word(word, fileName):
+    '''
+Replace each incorrect word with the 'top' word in the spell checking
+'''
+    lst = getCombinedWordSuggestions(word, fileName)
+    if len(lst) == 0:
+        newword = word
+    else:
+        newword = lst[0]
+    return newword
+
+
+if __name__ == '__main__':
+    main()
+
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+    
