@@ -1,0 +1,483 @@
+import sys
+
+def createDb():
+    f = open('movies.txt')
+    movieInfo = {}
+    for line in f:
+        #print line
+        line = line.rstrip().lstrip()
+        actorAndMovies = line.split(',')
+        actor = actorAndMovies[0]
+        movies = [x.lstrip().rstrip() for x in actorAndMovies[1:]]
+        movieInfo[actor] = set(movies)
+    f.close()
+    return movieInfo
+
+def createBestPicDb():
+    f = open('bestPics.txt')
+    bestPics = {}
+    for line in f:
+        #print line
+        line = line.lstrip().rstrip()
+        year = line.split('-')[0].lstrip().rstrip()
+        movie = line.split('-')[1].lstrip().rstrip()
+        bestPics[year] = movie
+    f.close()
+    return bestPics
+
+def insertInto(movie, listOfActors, movieDb):
+    '''update movieDb. movieDb: dictionary; movie:movie name as a string;
+listOfActors: a list consisting of strings. If actor from listOfActors already present, add movie to his name.
+If not create a new entry and add movie to his name.
+If the user enters actor name in any format other than the first alphabet CAPS for,
+we treat the entry as a new actor. [Piazza post 144]
+If user enters movie in any other case format than first letter capital,
+it is considered as a new movie. [Piazza post 160]
+No return and no printing as per the specs.'''
+    
+    for actor in listOfActors:
+        if movieDb.has_key(actor):
+            movieDb[actor].add(movie)
+        else:
+            movieDb[actor] = set([movie])
+    
+def deleteFrom(movie, movieDb):
+    '''delete all information from the database that corresponds to this movie.
+If movie not in database the function just quits as the specs say no printing and no returning anything
+If user enters movie in any other case format than first letter capital,
+it is considered as a new movie. [Piazza post 160]'''
+    
+    for actor in movieDb.keys():
+        if movie in movieDb[actor]:
+            movieDb[actor].remove(movie)
+
+##Check function
+def addBestPicture(year, movie, bestPicDb):####fix adding in years before 1934
+    '''insert the winners into the bestPicDb if year is valid.
+If year is invalid then the program closes with a Runtime error'''
+    if bestPicDb.has_key(str(year))or year < 1934:
+        raise RuntimeError,'Previous year'
+    else:
+        bestPicDb[str(year)] = movie
+
+def editSpellingOfActor(actorOldName, actorNewName, movieDb):
+    '''update records with the actor's new name. We check if movieDb has the old actors name.
+If the actor tries to change his name to any other actor in the database, we add a marker '2' to his name.
+Otherwise, the normal operation of changing the actor name to new name is performed.
+If actor not in database then do nothing. [Piazza post 168].'''
+    
+    if movieDb.has_key(actorOldName):
+        if movieDb.has_key(actorNewName):
+            actorOldNameChanged = actorOldName + str(2)
+            movieDb[actorOldNameChanged] = movieDb[actorOldName]
+            del movieDb[actorOldName]
+        else:
+            movieDb[actorNewName] = movieDb[actorOldName]
+            del movieDb[actorOldName]
+
+def selectWhereActorIs(actorName, movieDb):
+    '''given an actor, return the list of all movies.
+It returns an empty list for an actor not in database.
+If user enters actor in any case other than default, considers him as a new actor. [Piazza post 144]'''
+    
+    if movieDb.has_key(actorName):
+        return list(movieDb[actorName])
+    else:
+        return []
+
+def selectWhereMovieIs(movieName, movieDb):
+    '''given a movie, return the list of all actors.
+Returns an empty list if the movie not in database.
+If user enters movie in any other case format than first letter capital,
+it is considered as a new movie. [Piazza post 160]'''
+
+    movieActor = []
+    for actor in movieDb.keys():
+        if movieName in movieDb[actor]:
+            movieActor.append(actor)
+    return movieActor
+
+def selectFromBPWhereYearBetween(rangeStart, rangeEnd, bestPicsDb):
+    ''' given a range of years (both ends included), return a list of the best pictures.
+If year not in database, returns an empty list.'''
+    
+    bestPics = []
+    if str(rangeStart) in bestPicsDb.keys() and str(rangeEnd) in bestPicsDb.keys():
+        for year in range(rangeStart, rangeEnd + 1):
+            bestPics.append(bestPicsDb[str(year)])
+    return bestPics
+
+def getCoActors(actorName, movieDb):
+    '''Given the actor's name and movies database, finds all co-actors and returns a list.
+If no co-actors are found it returns an empty list. If actor not in database returns an empty list.
+If user enters actor in any case other than default, considers him as a new actor. [Piazza post 144]'''
+    
+    count = 0
+    list1 = []
+    if actorName in movieDb:
+        set1 = movieDb[actorName]
+        for ele in movieDb:
+            if ele != actorName:
+                if (set1.intersection(movieDb[ele]) != set()):
+                    list1.append(ele)
+                    count += 1
+        if count == 0:
+            list1 = []
+    return list1
+
+def getCommonMovie(actor1, actor2, movieDb):
+    '''Given the two actors and the movie database, find the list of movies in which they have acted together.
+If any of the actor not in database, it returns a blank list.
+If no common movie then returns an empty list.
+If user enters actor in any case other than default, considers him as a new actor. [Piazza post 144]'''
+
+    set1 = set()
+    set2 = set()
+    if actor1 in movieDb.keys():
+        set1 = movieDb[actor1]
+    if actor2 in movieDb.keys():
+        set2 = movieDb[actor2]   
+    listMovies = list(set1.intersection(set2))
+    return listMovies
+
+def bestMoviesForActor(actorName, bestMoviesDb, moviesDb):
+    '''Given the actor and the two databases, find the list of best movie(s) for which, he was the actor.
+If the actor does not have any best pics then return a blank list.
+If actor not in database, return an empty list.
+If user enters actor in any case other than default, considers him as a new actor. [Piazza post 144]'''
+    
+    bestMovies = []
+    for actor in moviesDb.keys():
+        if actorName.lower() == actor.lower():
+            set1 = moviesDb[actor]
+            for ele in set1:
+                if ele in str(bestMoviesDb.values()):
+                    bestMovies.append(ele)
+    return bestMovies
+
+def numBestMoviesForActor(actorName, bestMoviesDb, moviesDb):
+    '''Given the actor and the two databases, find the number of best movies, he has acted in.
+If user enters actor in any case other than default, considers him as a new actor. [Piazza post 144]'''
+    
+    movies = bestMoviesForActor(actorName, bestMoviesDb, moviesDb)
+    numMovies = len(movies)
+    return numMovies
+
+def getCommonActors(movie1, movie2, moviesDb):
+    '''Given two movies and the movies database, find actors common to both.
+Returns an empty if no common actors.
+Returns an empty list if any of the two (or both) movies not in database'''
+    
+    set1 = set()
+    set2 = set()
+    for ele in moviesDb:
+        if movie1 in moviesDb[ele]:
+            set1.add(ele)
+        if movie2 in moviesDb[ele]:
+            set2.add(ele)
+    commonList = list(set1.intersection(set2))
+    return commonList
+
+def getTwoDegreeActors(actor, movieDb):
+    '''Given an actor and the movies database, find the list of actor(s) indirectly related to him.
+This function provides upto second level of connection.
+If actor is not in the database, responds with an empty list.
+If user enters movie in any other case format than first letter capital,
+it is considered as a new movie. [Piazza post 160]'''
+    
+    second_degree_list = []
+    if movieDb.has_key(actor):
+        set1 = getCoActors(actor, movieDb)
+        for common_actors in set1:
+            set2 = getCoActors(common_actors, movieDb)
+            for second_degree_actors in set2:
+                if (second_degree_actors != actor) and (second_degree_actors not in set1):
+                    second_degree_list.append(second_degree_actors)
+    return second_degree_list
+
+def bestActor(decade, bestMoviesDb, moviesDb):
+    '''Given a decade, find the actor who acted in the most best movies.
+Returns the list of actors for whom the entry is present in the best pics database
+and who have max best pics for the decade.'''
+    
+    if decade == '00s':
+        startYear = 2000 + eval(decade.split('s')[0])
+        endYear = startYear + 9
+    elif decade == '30s': #30s start from 1934
+        startYear = 1904 + eval(decade.split('s')[0])
+        endYear = startYear + 5
+    else:
+        startYear = 1900 + eval(decade.split('s')[0])
+        endYear = startYear + 9
+    actorInBestPics = list()
+    bestPics = selectFromBPWhereYearBetween(startYear, endYear, bestMoviesDb)
+    for movies in bestPics:
+        actorInBestPics.extend(selectWhereMovieIs(eval(movies), moviesDb))
+    actorSet = set(actorInBestPics)
+    numberOfBestPics = 0
+    bestActors = list()
+    for actors in actorSet:
+        if numberOfBestPics < actorInBestPics.count(actors):
+            numberOfBestPics = actorInBestPics.count(actors)
+            for name in range(len(bestActors)):
+                bestActors.pop()
+            bestActors.append(actors)
+        elif numberOfBestPics == actorInBestPics.count(actors):
+            bestActors.append(actors)
+    return bestActors
+
+def getUnvisitedCoActor(actor,helper,movieDb):
+    '''This function basically appends values for all the co-actors for an actor to the helper dictionary.
+Eg. For Brad Pitt, if Angelina Jolie is in the co-actor list then Angelina Joie is given a number 1.
+It returns co-actors after every iteration.'''
+    
+    count = 0
+    for coActors in getCoActors(actor, movieDb):
+        if coActors not in helper:
+            helper[coActors] = helper[actor] + 1
+            return coActors
+    else:
+        return False
+
+def getBaconNumber(actor, movieDb):
+    '''This function starts with the actor for whom Bacon number is to be found as the center point.
+Here we first create a dictionary for the actors with the keys being the actor names and the values being the depth.
+Depth here is considered the relativity with the actor himself.
+Eg. If I enter Brad Pitt, depth for Brad Pitt will be 0. And that for Anjelina Jolie will be 1.
+Then it goes on finding the connected actors for the actor entered and his co-actors.
+As and when the dictionary gets updated, we take the next actor in the list and start finding the co-actors for him.
+Eg. First the dictionary contains {'Brad Pitt':0}. Then after getting all the co-actors for Brad Pitt in the dictionary,
+it is updated to {'Brad Pitt':0, 'Angelina Jolie': 1, .....}.
+Once it is done finding all the co-actors for Brad Pitt, it will go for the next element in the dictionary
+and update the co-actors for her. Such progression continues till Kevin Bacon is encountered.
+Once actorVisited becomes Kevin Bacon, the number pertaining to Kevin Bacon in the dictionary is returned.
+Eg. Brad Pitt has co-acted with Kevin Bacon. So in the first iteration the dictiionary would be -
+{'Brad Pitt':0, 'Angelina Jolie': 1, ....., 'Kevin Bacon':1}
+So here it will return 1
+Considering Angelina Jolie's as an example, Brad Pitt is her co-actor.
+So for her iteration every number in the dictioanry would be 1.
+Then for Brad Pitt's co-actors, every number would be 2. So here the function returns 2 as the Bacon number.
+If actor not in database or no correspondence to any actor acted with Bacon or his co-actors, return a -1.
+For Bacon himself, return a 0.'''
+    
+    if movieDb.has_key(actor):
+        depth = 0
+        helper = {}
+        helper[actor] = depth
+        actorQueue = list()
+        actorQueue.append(actor)
+        while len(actorQueue) != 0:
+            actorVisited = actorQueue.pop(0)
+            if actorVisited == 'Kevin Bacon':  #found baconNumber
+                return helper[actorVisited]
+            else:                                   #finding baconNumber
+                coActors = getUnvisitedCoActor(actorVisited,helper,movieDb)
+                while coActors:
+                    actorQueue.append(coActors)
+                    coActors = getUnvisitedCoActor(actorVisited,helper,movieDb)
+    else:
+        return -1                                   #No baconNumber   
+    
+def chooseOption(choice, movieDb, bestPics):
+    if choice == 1:
+        Choice1(movieDb, bestPics)
+    elif choice == 2:
+        Choice2(movieDb, bestPics)
+    elif choice == 3:
+        Choice3(movieDb, bestPics)
+    elif choice == 4:
+        Choice4(movieDb, bestPics)
+    elif choice == 5:
+        Choice5(movieDb, bestPics)
+    elif choice == 6:
+        Choice6(movieDb, bestPics)
+    elif choice == 7:
+        Choice7(movieDb, bestPics)
+    elif choice == 8:
+        Choice8(movieDb, bestPics)
+    elif choice == 9:
+        Choice9(movieDb, bestPics)
+    elif choice == 10:
+        Choice10(movieDb, bestPics)
+    elif choice == 11:
+        Choice11(movieDb, bestPics)
+    elif choice == 12:
+        Choice12(movieDb, bestPics)
+    elif choice == 13:
+        Choice13(movieDb, bestPics)
+    elif choice == 14:
+        Choice14(movieDb, bestPics)
+    elif choice == 15:
+        Choice15(movieDb, bestPics)
+    elif choice == 16:
+        sys.exit()
+        
+def Choice1(movieDb, bestPics):####fix crush
+    listOfActors = []
+    movie = raw_input('Enter the movie you want to add: ')
+    try:
+        count = input('Enter the number of actors for the movie: ')
+    except (NameError,SyntaxError):
+        print "invalid input"
+        return    
+    while count > 0:
+        actor = raw_input('Enter the actor: ')
+        listOfActors.append(actor)
+        count -= 1
+    insertInto(movie, listOfActors, movieDb)
+
+def Choice2(movieDb, bestPics):
+    movie = raw_input('Enter the movie you want to delete: ')
+    deleteFrom(movie, movieDb)
+
+def Choice3(movieDb, bestPics):####fix crush
+    movie = raw_input('Enter the movie you want to add: ')
+    try:
+        year = input('Enter the year the movie won the best picture award')
+    except (NameError,SyntaxError):
+        print "invalid input"
+        return
+    addBestPicture(year, movie, bestPics)
+
+def Choice4(movieDb, bestPics):
+    actorOldName = raw_input('Enter the name of the actor you want to change: ')
+    if actorOldName not in movieDb.keys():
+        print 'Actor not in database'
+    else:
+        actorNewName = raw_input('Enter the new name: ')
+        editSpellingOfActor(actorOldName, actorNewName, movieDb)
+    
+def Choice5(movieDb, bestPics):
+    actor = raw_input('Enter the actor you want to find movies for: ')
+    if actor not in movieDb.keys():
+        print 'Actor not in database'
+    movieList = selectWhereActorIs(actor, movieDb)
+    print movieList
+
+def Choice6(movieDb, bestPics):
+    movie = raw_input('Enter the name of the movie you want to find actors for: ')
+    movieFound = False
+    for ele in movieDb:
+        if movie in movieDb[ele]:
+            movieFound = True
+    if movieFound == False:
+        print 'Movie not in database'
+    actorList = selectWhereMovieIs(movie, movieDb)
+    print actorList
+
+def Choice7(movieDb, bestPics):###fix the crush
+    try:
+        year1 = input('Enter the start year: ')
+    except (NameError,SyntaxError):
+        print "invalid year input"
+        return
+    try:
+        year2 = input('Enter the end year: ')
+    except (NameError,SyntaxError):
+        print "invalid year input"
+        return
+    if str(year1) not in bestPics.keys() or str(year2) not in bestPics.keys() or year1 > year2:
+        print "invalid year range"
+    moviesList = selectFromBPWhereYearBetween(year1, year2, bestPics)
+    print moviesList
+    
+def Choice8(movieDb, bestPics):
+    actor = raw_input('Enter the actor you want to find co-actors for: ')
+    if actor not in movieDb.keys():
+        print 'Actor not in database '
+    coActors = getCoActors(actor, movieDb)
+    print coActors
+
+def Choice9(movieDb, bestPics):
+    actor1 = raw_input('Enter name of first actor: ')
+    actor2 = raw_input('Enter name of second actor: ')
+    if actor1 not in movieDb.keys() or actor2 not in movieDb.keys():
+        print 'Invalid actors input '
+    commonMovies = getCommonMovie(actor1, actor2, movieDb)
+    print commonMovies
+
+def Choice10(movieDb, bestPics):
+    actor = raw_input('Enter the actor you want to find best movies for: ')
+    if actor not in movieDb.keys():
+         print 'Actor not in database.'
+    bestMovies = bestMoviesForActor(actor, bestPics, movieDb)
+    print bestMovies
+
+def Choice11(movieDb, bestPics):
+    actor = raw_input('Enter the actor you want to find number of best movies for: ')
+    numberOfMovies = numBestMoviesForActor(actor, bestPics, movieDb)
+    print ' The actor has acted in ' + str(numberOfMovies) + ' best movies'
+
+def Choice12(movieDb, bestPics):
+    movie1 = raw_input('Enter the name of the first movie: ')
+    movie2 = raw_input('Enter the name of the second movie: ')
+    movieFound = False
+    for ele in movieDb:
+        if movie1 in movieDb[ele] or movie2 in movieDb[ele]:
+            movieFound = True
+    if movieFound == False:
+        print 'Input movies invalid.'
+    commonActors = getCommonActors(movie1, movie2, movieDb)
+    print commonActors
+
+def Choice13(movieDb, bestPics):
+    actor = raw_input('Enter the actor you want to find 2nd degree actors: ')
+    if actor not in movieDb.keys():
+        print 'Actor not in database'
+    actorList = getTwoDegreeActors(actor, movieDb)
+    print actorList
+
+def Choice14(movieDb, bestPics):######fixed the crush
+    decade = raw_input('Enter the decade to find the best actor for the decade: ')
+    choicePool = ['30s','40s','50s','60s','70s','80s','90s','00s']
+    while decade not in choicePool:
+        decade = raw_input('Illegal input. Please enter a valid decade for 30s to 00s ')
+    decadeActor = bestActor(decade, bestPics, movieDb)
+    print decadeActor
+
+def Choice15(movieDb, bestPics):
+    actor = raw_input('Enter the actor for whom you want to find the bacon number for: ')
+    if actor not in movieDb.keys():
+        print 'Actor not in database.'
+    baconNumber = getBaconNumber(actor, movieDb)
+    print baconNumber
+
+def printIntro():
+    print '''Welcome to "Wendy and AB Movie Base".
+We have a complete collection of actors, with the movies they have worked in
+and also the best picture names yearwise. You are free to view our database
+by choosing the following options.
+
+Enter 1 to insert a movie and actors in the database
+Enter 2 to delete movie from the database
+Enter 3 to add best picture of the year to the best picture database
+Enter 4 to edit the spelling of an actor
+Enter 5 to get all movies for an actor
+Enter 6 to get all actors for a movie
+Enter 7 to get best movies in between any two years
+Enter 8 to get co-actors for an actor
+Enter 9 to get common movies for two actors
+Enter 10 to get an actors' movies which were termed best movies for the year
+Enter 11 to get number of best movies for an actor
+Enter 12 to get common actors for a two movies
+Enter 13 to get indirectly related actors upto second connection
+Enter 14 to get the best actor for an entire decade
+Enter 15 to get the Bacon number for an actor
+Enter 16 to quit without viewing'''
+    
+def main():
+    movieDb = createDb()
+    bestPics = createBestPicDb()
+    
+    choice = 0
+    printIntro()
+    while True:
+        choice = raw_input('Enter your choice: ')
+        choicePool = ['1','2','3','4','5','6','7','8','9','10','11','12','13','14','15','16']#fix the crush
+        while choice not in choicePool:
+            choice = raw_input('Illegal choice. Please enter a valid choice: ')
+        chooseOption(int(choice), movieDb, bestPics)
+        
+if __name__ == '__main__':
+    main()
+    
