@@ -1,0 +1,187 @@
+import random
+deck=range(1,61)
+discardPile=[]
+
+
+def shuffle():
+        '''shuffle cards to make a new deck'''
+        for i in range(len(deck)):
+                discardPile.append(deck.pop())
+        number=len(discardPile)
+        for i in range(number):
+                deck.append(discardPile.pop(random.randint(0,number-i-1)))
+
+
+
+
+def checkRacko(rack):
+        '''check the input rack to see if Racko has been achieved'''
+        win=True
+        for i in range(9):
+                if rack[i]<rack[i+1]:
+                        win=False
+        return win
+
+
+
+def dealSingleCard():
+        '''get one card from the top of deck'''
+        x=deck.pop()
+        return x
+
+
+def dealInitialHands():
+        '''dealing two hands of 10 cards each'''
+        InitialHands_user=[]
+        InitialHands_computer=[]
+        for i in range(10):
+                InitialHands_user.append(dealSingleCard())
+                InitialHands_computer.append(dealSingleCard())
+        return (InitialHands_user,InitialHands_computer)
+
+
+
+def doesUserStartGame():
+        '''decide the starter of the game'''
+        shuffle()
+        computer_choice=random.randint(0,59)
+        user_choice=0
+        while user_choice<1 or user_choice >59:
+                user_choice=input("Which card would you want(1~59)?\n")
+        card_computer=deck.pop(computer_choice)
+        card_user=deck.pop(user_choice-1)
+        discardPile.extend([card_user,card_computer])
+        shuffle()
+        if card_user > card_computer:
+                return True
+        else:
+                return False
+
+
+
+def printTopToBottom(rack):
+        '''print out the rack'''
+        for i in range(10):
+                print rack[i]
+
+
+
+def findAndReplace(newCard, cardToBeReplaced, hand):
+        ''' find the cardToBeReplaced in the hand and replace it with newCard.'''
+        find=False
+        for i in range(10):
+                if cardToBeReplaced==hand[i]:
+                        find=True
+        if find:
+                index=hand.index(cardToBeReplaced)
+                hand.insert(index,newCard)
+                hand.remove(cardToBeReplaced)
+                discardPile.pop()
+                discardPile.append(cardToBeReplaced)
+        else:
+                print "There is no",cardToBeReplaced,"in your hand"
+                replace_card=input('Which card from your hand do you want to kick off?\n')
+                hand=findAndReplace(newCard, replace_card, hand)
+        return hand
+
+
+
+def addCardToDiscardPile(card):
+        discardPile.append(card)
+
+
+
+
+def playComputer(hand):
+        '''Firstly, computer will analyse its hands, knowing which slots need changing cards, and the range of numbers the slot needs. Then computer decides whether the new card meets it requirement.'''
+        #analyse hands
+        slot_range = []
+        slot_range_assistant=[]
+        hand_done_assistant=[]
+        considering = True
+        hand_done=[False]*10
+        for i in range(10):
+                slot_range.append([60-i*6,55-i*6])
+        while considering:
+                if hand_done[1]==True:
+                                slot_range[0][1]=hand[1]+1
+                for i in range(1,9):
+                        if hand_done[i-1]:
+                                slot_range[i][0]=hand[i-1]-1
+                        if hand_done[i+1]:
+                                slot_range[i][1]=hand[i+1]+1
+                if hand_done[8]:
+                                slot_range[9][0]=hand[8]-1
+                for i in range(10):
+                        if hand[i]>=slot_range[i][1] and hand[i]<=slot_range[i][0]:
+                                hand_done[i] = True
+                if hand_done == hand_done_assistant:
+                        considering = False
+                hand_done_assistant =hand_done[:]
+        change_first=False
+        for i in range(10): #decide whether the new card meets it requirement 
+                if not(hand_done[i]) and discardPile[-1]>=slot_range[i][1] and discardPile[-1]<=slot_range[i][0]:
+                        change_first=True
+                        index_first=i
+        if change_first:
+                hand=findAndReplace(discardPile[-1], hand[index_first], hand)
+        else:
+                card = dealSingleCard()
+                addCardToDiscardPile(card)
+                change_second=False
+                for i in range(10):
+                        if not(hand_done[i]) and discardPile[-1]>=slot_range[i][1] and discardPile[-1]<=slot_range[i][0]:
+                                change_second=True
+                                index_second=i
+                if change_second:
+                        hand=findAndReplace(discardPile[-1], hand[index_second], hand)
+        return hand
+
+
+def main():
+        shuffle()
+        userStarts = doesUserStartGame()
+        #assign human_hand to be the user's hand
+        #and computer_hand to be the computer's
+        two_hands = dealInitialHands() #return two lists in a tuple
+        human_hand = two_hands[0]
+        computer_hand = two_hands[1]
+        #reveal one card to begin the discard pile
+        card = dealSingleCard()
+        addCardToDiscardPile(card)
+        if userStarts == False: #if computer is to start first
+                computer_hand = playComputer(computer_hand)
+        while checkRacko(human_hand) == False and checkRacko(computer_hand) == False:
+                #ask the user if they want this card
+                printTopToBottom(human_hand)
+                print 'The top of the discard pile is ' + str(discardPile[-1])
+                choice = raw_input('Do you want this card?\n')
+                if choice == 'y':
+                        replaceCard = input('Which card from your hand do you want to kick off?\n')
+                        card = discardPile[-1]
+                        human_hand = findAndReplace(card, replaceCard, human_hand)
+                elif choice == 'n':
+                        card = dealSingleCard()
+                        addCardToDiscardPile(card)
+                        print 'The card you get from the deck is ' + str(card)
+                        secondChoice = raw_input('Do you want to keep it?\n')
+                        if secondChoice == 'y':
+                                replaceCard = input('Which card do you want to swap it out with?\n')
+                                human_hand = findAndReplace(card, replaceCard, human_hand)
+                if len(deck) == 0:
+                        shuffle()
+                print "----------------------------------------"
+                if not(checkRacko(human_hand)):
+                        computer_hand = playComputer(computer_hand)
+                        if len(deck) == 0:
+                                shuffle()
+        if checkRacko(human_hand):
+                print "You are winner!!!"
+        else:
+                print "Oh no! You lost"
+
+
+
+if __name__ == '__main__':
+
+    main()
