@@ -1,0 +1,876 @@
+import random # needed for shuffling a Deck
+
+class Card(object):
+    """Denote a card with rank and suit"""
+    """ Also, hidden indicates whether the card is face up or face down"""
+    # Protocol
+    #   1. 'no card' is represented by BOTH r = 0 and s = ''
+    #   2. set_rank and set_suit should be commented out after development and debugging
+    #   3  rank is int: 1=Ace, 2-10 face value, 11=Jack, 12=Queen, 13=King
+    #   a person using this class should be able to create a card by saying
+    #   card = Card('J', 'c')
+    #   card = Card('j', 's')
+    #   card = Card(4, 'd')
+    def __init__(self, r=0, s=''): 
+       self.rank = r
+       self.suit = s
+       self.hidden = False
+
+    def has_same_color(self, other):
+        """ is the other card the same color as this instance """
+        color_1= 'scSC'
+        color_2 = 'dhDH'
+        if color_1.find(self.suit)!=-1 and  color_1.find(other.suit)!=-1:
+            return True
+        elif color_2.find(self.suit)!=-1 and  color_2.find(other.suit)!=-1:
+            return True
+        else:
+            return False
+        
+    def set_hidden(self, val=True):
+        """Set the card's hidden value, default True"""
+        self.hidden = val
+
+    def get_hidden(self):
+        """Retrieve the card's hidden value"""
+        return self.hidden
+        
+    def show_card(self):
+        """Set the card as a non-hidden card"""
+        self.hidden = False
+        
+    def set_rank(self, r):
+        """For Development and Debugging only: Set the rank of the card: 0-13"""
+        self.rank = r
+        
+    def set_suit(self, s):
+        """For Development and Debugging only: Set the suit of the card: C,S,D,H"""
+        self.suit = s
+        
+    def get_rank(self):
+        """Return rank of the card as int: 0-13"""
+        if self.rank == 'K' or self.rank == 'k':
+            return 13
+        elif self.rank == 'Q' or self.rank == 'q':
+            return 12
+        elif self.rank == 'J' or self.rank == 'j':
+            return 11
+        elif self.rank == 'A' or self.rank == 'a':
+            return 1
+        return self.rank
+        
+    def get_suit(self):
+        """Return suit of the card as string: C,S,D,H"""
+        return self.suit.upper()
+        
+    def __str__(self):
+        """String representation of card for printing: rank + suit,
+           e.g. 7S or JD, 'blk' for 'no card' and 'xx' for a face down card"""
+        if self.rank == 0:
+            return 'blk'
+        elif self.hidden == True:
+            return 'xx'
+        if type(self.rank) == int:
+            return str(self.rank) + self.suit.upper()
+        return self.rank.upper() + self.suit.upper()
+
+
+class Deck():
+    """Denote a deck to play cards with"""
+    
+    def __init__(self):
+        """Initialize deck as a list of all 52 cards: 13 cards in each of 4 suits"""
+        self.deck = []
+        suitNum=1
+        while suitNum<=4:
+            if suitNum==1: suit='c'
+            elif suitNum==2: suit='s'
+            elif suitNum==3: suit='d'
+            elif suitNum==4: suit='h'
+            rankNum=1
+            while rankNum<=13:
+                if rankNum==1: rank='A'
+                elif rankNum==11: rank='J'
+                elif rankNum==12: rank='Q'
+                elif rankNum==13: rank='K'
+                else: rank=rankNum
+                self.deck.append(Card(rank,suit))
+                rankNum+=1
+            suitNum+=1
+        
+    def shuffle(self):
+        """Shuffle the deck"""
+        random.shuffle(self.deck) 
+
+    def deal(self):
+        """Deal a card by returning the card that is removed off the top of the deck"""
+        return self.deck.pop()
+  
+    def discard(self, n):
+        """Remove n cards from the top of the deck"""
+        if n>0:
+            self.deck.pop()
+            discard(self,n-1)
+
+    def top(self):
+        """Return the value of the top card -- do not remove from deck."""
+        return self.deck[-1]
+
+    def bottom(self):
+        """Return the value of the bottom card -- do not remove from deck."""
+        return self.deck[0]
+
+    def add_card_top(self, c):
+        """Place card c on top of deck"""
+        self.deck.append(c)
+
+    def add_card_bottom(self,c):
+        """ Place card c on the bottom of the deck"""
+        self.deck=[c]+self.deck
+
+    def cards_left(self):
+        """Return number of cards in deck"""
+        return len(self.deck) 
+
+    def empty(self):
+        """Return True if the deck is empty, False otherwise"""
+        return len(self.deck) == 0
+
+    def __str__(self):
+        """Represent the whole deck as a string for printing -- very useful during code development"""
+        string=''
+        for card in self.deck:
+            string=string+card.__str__()+' '
+        return string
+
+from cards import *
+import unittest
+
+class TestCards(unittest.TestCase):  # use any meaningful name
+
+    def setUp(self):
+        self.myCard = Card('J', 's')
+        self.myHiddenCard = Card(2, 'c')
+        self.myHiddenCard.set_hidden()
+        self.myNumericCard = Card('3', 'D')
+        self.myHeartsCard = Card('Q', 'H')
+        self.myDiamondsCard = Card('a', 'd')
+
+        self.myDeck = Deck()
+    
+    def testInitializer(self):
+        '''the initializer test is testing the rank and the suit '''
+        #for the initialize test we will not rely on setUp
+        card = Card('K', 'c')
+        self.assertEqual(card.get_rank(), 13)
+        card = Card(4 , 'd')
+        self.assertEqual(card.get_rank(), 4)
+        card = Card('Q', 's')
+        self.assertEqual(card.get_rank(), 12)
+        card = Card('J', 'h')
+        self.assertEqual(card.get_rank(), 11)
+        card = Card('a', 'h')
+        self.assertEqual(card.get_rank(), 1)
+
+    def testSuit(self):
+        self.assertEqual(self.myHeartsCard.get_suit(), 'H')
+        self.assertEqual(self.myDiamondsCard.get_suit(), 'D')
+
+    def testStringFunction(self):
+        self.assertEqual(str(self.myCard), 'JS')
+        self.assertEqual(str(self.myHiddenCard), 'xx')
+        self.assertEqual(str(self.myNumericCard), '3D')
+
+    def testHasSameColor(self):
+        self.assertTrue(self.myCard.has_same_color(self.myHiddenCard))
+        self.assertFalse(self.myCard.has_same_color(self.myNumericCard))
+        self.assertFalse(self.myCard.has_same_color(self.myHeartsCard))
+        self.assertTrue(self.myHeartsCard.has_same_color(self.myDiamondsCard))
+
+    def testSetHidden(self):
+        self.myHiddenCard.set_hidden(False)
+        self.assertFalse(self.myHiddenCard.get_hidden())
+
+    def testSetHiddenAndStringify(self):
+        self.myHiddenCard.set_hidden(False)
+        self.assertEqual(str(self.myHiddenCard), '2C')  
+        
+######################## unit tests for deck ##############################
+    def testDeckInitializer(self):
+        myDeck = Deck()
+        listOfCards = myDeck.deck
+        #make sure you have the right number of cards
+        self.assertEqual(len(listOfCards), 52)
+        for c in listOfCards:
+            self.assertTrue(isinstance(c, Card))
+        ranks = ['a'] + range(2,11) + ['j', 'q', 'k']
+        suits = ['c', 'd', 'h', 's']
+        stringifiedCards = [str(x) for x in listOfCards]
+        #make sure that every rank,suit combination is in the deck
+        #our method of asserting equality is to use the string function
+        for rank in ranks:
+            for suit in suits:
+                self.assertTrue(str(Card(rank,suit)) in stringifiedCards)
+
+    def testShuffle(self):
+        currentDeck = self.myDeck.deck[:]
+        self.myDeck.shuffle()
+        #make sure something got rearranged
+        #using a helper function here to show some more examples
+        self.assertFalse(self.compareTwoDecks(self.myDeck.deck, currentDeck))
+
+    def testDeal(self):
+        expectedCard = self.myDeck.deck[51]
+        dealtCard = self.myDeck.deal()
+        self.assertTrue(isinstance(dealtCard, Card))
+        #assert one card was taken from the deck
+        self.assertEqual(51, len(self.myDeck.deck))
+        self.assertEqual(str(expectedCard), str(dealtCard))
+
+    def compareTwoDecks(self, deck1, deck2):
+        strDeck1 = self.stringifyDeck(deck1)
+        strDeck2 = self.stringifyDeck(deck2)
+        return strDeck1 == strDeck2
+
+    def stringifyDeck(self, listOfCards):
+        cards = [str(x) for x in listOfCards]
+        concatCards = reduce(lambda x,y: x+y, cards)
+        return concatCards
+    
+unittest.main() 
+
+def isInt(arg):
+    try:
+        arg = int(arg)
+    except ValueError, e:
+        return False
+    else:
+        return True
+
+def printPattern(pattern,length):
+    pr_times = 0
+    pr_str = ""
+    while pr_times < length:
+        pr_str = pr_str + pattern
+        pr_times = pr_times + 1
+    print pr_str
+
+def display_top():
+    printPattern('=',51)
+    print 'Deck\tWaste\t\t'+'[1]\t'+'[2]\t'+'[3]\t'+'[4]\t'
+
+    
+#solitaire.py is a Solitaire game
+#that release player's pressure from work and study
+
+
+from cards import *
+from helperFunctions import *
+
+class Solitaire():
+    def __init__(self):
+        '''Denote a game with one mainDeck, seven tableaus, four foundations, and one waste'''
+        self.mainDeck=Deck()
+        self.mainDeck.shuffle()
+        self.tableau=[[],[],[],[],[],[],[]]
+        self.foundation=[[],[],[],[]]
+        self.foundationSuit={1:'',2:'',3:'',4:''}
+        self.waste=[]
+        i=0
+        while i<7:
+            num=0
+            while num<=i:
+                self.tableau[i].append(self.mainDeck.deal())
+                self.tableau[i][-1].set_hidden()
+                num+=1
+            self.tableau[i][0].show_card()
+            i+=1
+       
+    def play(self):
+        '''start a game, record the original card distribute sitiation
+        and end if the user win'''
+        self.__init__()
+        self.record()
+        while self.checkWin()!=True:
+            self.display()
+            move = self.makeMove(self.getUserInput())
+            if not move:
+                print 'Input Ileagal'    
+        print 'You Win! Congradulations!!'
+
+    def makeMove(self,user):
+        '''move cards according to the input command. '''
+        if user[0]=='g':
+            move = self.deckToWaste()
+            if not move: return False 
+            return True
+        if user[0]=='r':   ######not sure if this is recover the current game or a new game
+            self.replay()
+            return True
+        if user[0]=='TT':
+            move = self.tableauToTableau(user[1],user[2],user[3])
+            if not move: return False 
+            return True
+        if user[0]=='TF':
+            move = self.tableauToFoundation(user[1],user[2])
+            if not move: return False 
+            return True
+        if user[0]=='WT':
+            move = self.wasteToTableau(user[1])
+            if not move: return False 
+            return True
+        if user[0]=='WF':
+            move = self.wasteToFoundation(user[1])
+            if not move: return False 
+            return True
+        if user[0]=='None':
+            return False #####move the print out into play()
+        
+    def getUserInput(self):
+        '''get user command for moving card'''
+        usr_input=raw_input('How would you like to play?\n')
+        return self.judgeUserInput(usr_input)
+
+    def getTTinfo(self,method):
+        '''get Tableau to Tableau information only if the user imput is valid'''
+        if isInt(method[4:-8]) and isInt(method[-7]) and isInt(method[-2]):
+            i=int(method[4:-8])
+            j=int(method[-7])
+            k=int(method[-2])
+            if j not in range(1,8) or k not in range(1,8) or j==k or i>len(self.tableau[j-1]): return['None']
+            return ['TT',i,j,k]
+        return ['None']
+    
+    def getTFinfo(self,method):
+        '''get Tableau to Foundation information only if the user imput is valid'''
+        if isInt(method[4]) and isInt(method[-2]):
+            n=int(method[4])
+            m=int(method[-2])
+            if n not in range(1,8) or m not in range(1,5) or len(self.tableau[n-1])==0: return ['None']
+            return ['TF',n,m]
+        return ['None']
+    
+    def getWTinfo(self,method):
+        '''get Waste to Tableau information only if the user imput is valid'''
+        if isInt(method[-2]):
+            n=int(method[-2])
+            if n not in range(1,8): return ['None']
+            return ['WT',n]
+        return ['None']
+    
+    def getWFinfo(self,method):
+        '''get Waste to Foundation information only if the user imput is valid'''
+        if isInt(method[-2]):
+            m=int(method[-2])
+            if m not in range(1,5): return ['None']
+            return ['WF',m]
+        return ['None']
+    
+    def judgeUserInput(self,method):
+        '''judge which type of command the user input. Input Validation is conducted in this function'''
+        if len(method)>=13:
+            if method[:4]=='m t[' and method[-8]==',' and method[-6:-2]=='] t[' and method[-1]==']':
+                return self.getTTinfo(method)
+            else: return['None']
+        elif len(method)==11:
+            if method[:4]=='m t[' and method[5:9]=='] f[' and method[10]==']':
+                return self.getTFinfo(method)
+            else: return['None']
+        elif len(method)==8:
+            if method[:6]=='m w t[' and method[7]==']':
+                return self.getWTinfo(method)
+            elif method[:6]=='m w f[' and method[7]==']':
+                return self.getWFinfo(method)
+            else: return ['None']
+        elif method=='g':
+            return ['g']
+        elif method=='r':
+            return ['r']
+        else: return['None']
+
+    def saveDeck(self):
+        '''save the origin deck in case the user choose to replay the game'''
+        self.origindeck=[]
+        for card in self.mainDeck.deck:
+            self.origindeck.append(str(card.rank)+card.get_suit())
+
+    def saveTableau(self):
+        '''save the origin tableaus in case the user choose to replay the game'''
+        self.origintab=[[],[],[],[],[],[],[]]
+        i=0
+        for tableau in self.tableau:
+            for card in tableau:
+                self.origintab[i].append(str(card.rank)+card.get_suit())
+            i+=1
+
+    def record(self):
+        '''record original deck and tableaus as string'''
+        self.saveDeck()
+        self.saveTableau()
+
+    def replayDeck(self):
+        '''recover to the original deck'''
+        self.mainDeck.deck=[]
+        for card in self.origindeck:
+            if isInt(card[:-1]):
+                self.mainDeck.deck.append(Card(int(card[:-1]),card[-1]))
+            else: self.mainDeck.deck.append(Card(card[:-1],card[-1]))
+
+    def replayTableau(self):
+        '''recover to the original tableau'''
+        self.tableau=[[],[],[],[],[],[],[]]
+        i=0
+        for tableau in self.origintab:
+            for card in tableau:
+                if isInt(card[:-1]):
+                    self.tableau[i].append(Card(int(card[:-1]),card[-1]))
+                else:
+                    self.tableau[i].append(Card(card[:-1],card[-1]))
+                self.tableau[i][-1].set_hidden()
+            self.tableau[i][0].show_card()
+            i+=1
+        
+    def replay(self):
+        '''recover the original deck and tableaus'''
+        self.__init__()
+        self.replayDeck()
+        self.replayTableau()
+        
+#-----------------------------------UI-------------------------------------#
+    def displayWF(self):
+        '''display waste and foundations on the screen'''
+        blk='__\t'
+        empt='  \t'
+        string=''
+        if len(self.mainDeck.deck)!=0:
+            string=string+'xx\t'
+        else: string=string+blk
+
+        if len(self.waste)!=0:
+            string=string+self.waste[-1].__str__()+'\t'+empt
+        else: string=string+blk+empt
+        i=0
+        while i<4:
+            if len(self.foundation[i])==0: string=string+blk
+            else: string=string+self.foundation[i][0].__str__()+'\t'
+            i+=1
+        print string
+
+    def createTabDic(self):
+        '''create tableau in form of a dictionary '''
+        self.tableauDic={}
+        i=1
+        while i<=7:
+            self.tableauDic[i]=[]
+            for card in self.tableau[i-1]:
+                self.tableauDic[i].append(card)
+            i+=1
+
+    def displayTab(self):
+        '''display tableaus on the screen'''
+        empt='  \t'  
+        maxLen=10
+        for lst in self.tableau:
+            maxLen=max(maxLen,len(lst))
+        #find the longest tableau
+        line=1
+        self.createTabDic()
+        while line<=maxLen:
+            string=''
+            i=0
+            while i<7:
+                if len(self.tableau[i])<line: string=string+empt
+                else: string=string+self.tableauDic[i+1][-line].__str__()+'\t'
+                i+=1
+            print string
+            line+=1
+        
+    def display(self):
+        '''display the game on the screen'''
+        display_top()
+        self.displayWF()
+        printPattern('-',51)
+        print '[1]\t[2]\t[3]\t[4]\t[5]\t[6]\t[7]\t'        
+        self.displayTab()
+        printPattern('=',51)
+#--------------------------------------------------------------------------#
+
+    def deckToWaste(self):
+        '''move cards from deck to waste, if both are empty, return as illegal move'''
+        if self.mainDeck.empty()==False:
+            self.waste.append(self.mainDeck.deal())
+            return True
+        elif len(self.waste)!=0:
+            self.mainDeck.deck=self.waste
+            self.mainDeck.deck.reverse()
+            self.waste=[]
+            self.waste.append(self.mainDeck.deal())
+            return True
+        else: return False #no more cards in deck or waste->illegal input
+
+    def checkOrder(self,stack):
+        '''check whether a stack of cards in right ranking order'''
+        #check if exact order
+        i=0
+        while i<len(stack):
+            if i==(len(stack)-1): return True
+            elif stack[i].get_rank() != stack[i+1].get_rank()-1: return False
+            i+=1
+            
+    def checkColor(self,stack):
+        '''check if a stack of card is alternatively red and black'''
+        i=0
+        while i<len(stack):
+            if i==len(stack)-1: return True
+            if stack[i].has_same_color(stack[i+1]): return False
+            i+=1
+            
+    def checkTT(self,i,j,k):
+        '''check whether's it's ok to more the i-1 card from tableau[j-1] to tableau[k-1]'''
+        #check if blank tableau
+        if len(self.tableau[j-1])==0:
+            return False
+        #check if moving hidden card
+        if self.tableau[j-1][i-1].hidden==True:
+            return False
+        #check if in right rank
+        if self.checkOrder(self.tableau[j-1][:i])==False:
+            return False
+        #check if in right color sequence
+        if self.checkColor(self.tableau[j-1][:i])==False:
+            return False
+        #check if it's ok to connect with purpose tableau
+        if len(self.tableau[k-1])!=0:
+            if self.tableau[j-1][i-1].has_same_color(self.tableau[k-1][0]) or (self.tableau[j-1][i-1].get_rank()+1)!= self.tableau[k-1][0].get_rank():
+                return False
+        elif self.tableau[j-1][i-1].get_rank()==13: return True
+        else:
+            return False
+        return True
+
+    def tableauToTableau(self,i,j,k):
+        '''after checkTT, move the i-1 card from tableau[j-1] to tableau[k-1]'''
+        if self.checkTT(i,j,k)==True:
+            self.tableau[k-1]=self.tableau[j-1][:i]+self.tableau[k-1]
+            self.tableau[j-1]=self.tableau[j-1][i:]
+            #show the hidden card if needed
+            if len(self.tableau[j-1])!=0:
+                if self.tableau[j-1][0].hidden==True: self.tableau[j-1][0].show_card()
+            return True    
+        return False
+
+    def checkCardToFoundation(self,card,m):
+        '''check if it's ok to move card to foundation[m-1]'''
+        #foundationSuit is a dictionary, that records the suit of each foundation
+        #the key of foundationSuit is from 1-4
+        if self.foundationSuit[m]=='':
+            if card.get_rank()==1: return True
+            else:
+                return False
+        elif self.foundationSuit[m]==card.get_suit():
+            if card.get_rank()==(self.foundation[m-1][0].get_rank()+1): return True
+            else:
+                return False     
+        else:
+            return False
+
+    def tableauToFoundation(self,n,m):
+        '''after check, move the first card from tableau[n-1] to foundation[m-1]'''
+        if self.tableau[n-1]==[]: return False
+        if self.checkCardToFoundation(self.tableau[n-1][0],m)==True:
+            self.foundationSuit[m]=self.tableau[n-1][0].get_suit()
+            self.foundation[m-1]=[self.tableau[n-1].pop(0)]+self.foundation[m-1]
+            #show hidden card if needed
+            if len(self.tableau[n-1])!=0:
+                if self.tableau[n-1][0].hidden==True: self.tableau[n-1][0].show_card()
+            return True                
+        return False
+
+    def wasteToFoundation(self,m):
+        '''after check, move the last card from waste pile to foundation[m-1]'''
+        if len(self.waste)==0:
+            return False  
+        if self.checkCardToFoundation(self.waste[-1],m)==True:
+            self.foundationSuit[m]=self.waste[-1].get_suit()
+            self.foundation[m-1]=[self.waste.pop()]+self.foundation[m-1]
+            return True
+        return False
+
+    def checkWT(self,n):
+        '''check if it's ok to more card from waste to tableau[n-1]'''
+        if len(self.waste)==0:
+            return False
+        elif len(self.tableau[n-1])==0:
+            if self.waste[-1].get_rank()==13: return True
+            else:
+                return False
+        elif self.waste[-1].has_same_color(self.tableau[n-1][0]):
+            return False
+        elif self.waste[-1].get_rank()!=self.tableau[n-1][0].get_rank()-1:
+            return False
+        return True
+
+    def wasteToTableau(self,n):
+        '''move cards from waste to tableau'''
+        if self.checkWT(n)==True:
+            self.tableau[n-1]=[self.waste.pop()]+self.tableau[n-1]
+            return True
+        return False
+
+    def checkWin(self):
+        '''if there's no card in deck & waste & all tableaus, then the game win!'''
+        i=0
+        while i<7:
+            if len(self.tableau[i])!=0: return False
+            i+=1
+        return len(self.waste)==0 and self.mainDeck.empty()
+
+
+def printIntroMessage():
+    print '''\n********************|Solitaire|********************'''
+    print '\t\tWelcome to Solitaire Game!!!'
+    print 'Here is the instruction:'
+    print '1. m t[i,j] t[k] - Move the i card in the j tableau to the k tableau.\
+            \n2. m t[n] f[m] - Move the card from tableau n to foundation m.\
+            \n3. g - Give the user one card and place them face up on the waste.\
+            \n4. m w t[n] - Move the card from the waste to tableau n.\
+            \n5. m w f[m] - Move the card from the waste to foundation m.\
+            \n6. r - restart the whole game with the initial situation of the current game.'
+    print '''*******************|Good Luck|**********************\n'''
+
+def main():
+    printIntroMessage()
+    solitaire=Solitaire()
+    solitaire.play()
+    choice=raw_input('do you want to play again?y/n')
+    while choice!='n':
+        solitaire.play()
+        choice=raw_input('do you want to play again?y/n')
+
+if __name__ == '__main__':
+    main()
+
+from solitaire import *
+import unittest
+
+class TestSolitaire(unittest.TestCase):
+
+    def setUp(self):
+        self.game = Solitaire()
+        self.stackOfCard = []
+        stack = self.stackOfCard
+        for i in range(2,9):
+            self.stackOfCard.append(Card(i,'s'))
+        [self.stackOfCard[i].set_suit('s') for i in range(len(stack)) if i%2 == 0]
+        [self.stackOfCard[i].set_suit('h') for i in range(len(stack)) if i%2 == 1]
+        
+
+    def testInitializer(self):
+        self.assertTrue(isinstance(self.game.mainDeck, Deck))
+        self.assertTrue(isinstance(self.game.foundationSuit, dict))
+        self.assertTrue(isinstance(self.game.waste, list))
+        tableau = self.game.tableau
+        for i in range(len(tableau)):
+            self.assertEqual(len(tableau[i]),i+1)
+            self.assertFalse(tableau[i][0].get_hidden())
+        for i in range(1,len(tableau)):
+            for j in range(1,i):
+                self.assertTrue(tableau[i][j].get_hidden())
+
+    def testmakeMove(self):
+        self.assertTrue(self.game.makeMove(['g']))
+        self.assertFalse(self.game.makeMove(['']))
+        self.assertFalse(self.game.makeMove(['r g']))
+        self.assertFalse(self.game.makeMove([1]))
+
+    def testgetTTinfo(self):
+        self.assertEqual(['TT',1,2,3], self.game.getTTinfo('m t[1,2] t[3]'))
+        self.assertNotEqual(['TT',1,12,3], self.game.getTTinfo('m t[1,8] t[3]'))
+        self.assertNotEqual(['TT','i','j','k'], self.game.getTTinfo('m t[i,j] t[k]'))
+        self.assertTrue('None' in self.game.getTTinfo('m t[] t[]'))
+        self.assertTrue('None' in self.game.getTTinfo('t[]'))
+
+    def testgetTFinfo(self):
+        self.assertEqual(['TF',2,3], self.game.getTFinfo('m t[2] f[3]'))
+        self.assertNotEqual(['TF','n','m'], self.game.getTFinfo('m t[n] f[m]'))
+        self.assertTrue('None' in self.game.getTFinfo('t[] f[]'))
+        self.assertTrue('None' in self.game.getTFinfo('mt[]f[]'))
+        self.assertEqual(['TF',1,2], self.game.getTFinfo('m t[1] f[2]'))
+
+
+    def testgetWTinfo(self):
+        self.assertEqual(['WT',7], self.game.getWTinfo('m w t[7]'))
+        self.assertNotEqual(['WT','n'], self.game.getWTinfo('m w t[n]'))
+        self.assertTrue('None' in self.game.getWTinfo('m t[n]'))
+        self.assertTrue('None' in self.game.getWTinfo('mw[]f[]'))
+        self.assertFalse(['WT',2] in self.game.getWTinfo('m d a[2]'))
+
+
+    def testgetWFinfo(self):
+        self.assertNotEqual(['WF',8], self.game.getWFinfo('m w f[8]'))
+        self.assertNotEqual(['WF','m'], self.game.getWFinfo('m w f[m]'))
+        self.assertTrue('None' in self.game.getWFinfo('m f[m]'))
+        self.assertTrue( 1 in self.game.getWFinfo('m w f[1]'))
+        self.assertEqual(['WF',2], self.game.getWFinfo('m w f[2]'))
+
+
+    def testjudgeUserInput(self):
+        self.assertTrue(self.game.judgeUserInput('g'))
+        self.assertTrue(self.game.judgeUserInput('r'))
+        self.assertTrue(self.game.judgeUserInput('m t[1,2] t[2]'))
+        self.assertTrue('None' in self.game.judgeUserInput('m t[10] f[4]'))
+        self.assertTrue('None' in self.game.judgeUserInput('m f t[5]'))
+        self.assertTrue('None' in self.game.judgeUserInput('m f[3] w'))
+        self.assertTrue('None' in self.game.judgeUserInput(''))
+        self.assertTrue('None' in self.game.judgeUserInput('m t[]'))
+        self.assertTrue('None' in self.game.judgeUserInput('m t[a,b] t[2]'))
+        self.assertTrue('None' in self.game.judgeUserInput('m w f[a]'))
+        
+        
+    def testRecord(self):
+        deck = self.game.mainDeck.deck
+        tableau = self.game.tableau
+        self.game.record()
+        for card in deck:
+            self.assertTrue(str(card.rank)+card.get_suit() in self.game.origindeck)
+        for i in range(len(tableau)):
+            for card in tableau[i]:
+                self.assertTrue(str(card.rank)+card.get_suit() in self.game.origintab[i])
+
+    def testReplay(self):
+        self.game.record()
+        [card.set_rank(0) for card in self.game.mainDeck.deck]
+        self.game.replay()
+        for i in range(len(self.game.origindeck)):
+            self.assertEqual(self.game.origindeck[i].lower(), str(self.game.mainDeck.deck[i]).lower())
+        for i in range(len(self.game.origintab)):
+            for card in self.game.origintab[i]:
+                j = self.game.origintab[i].index(card)
+                self.game.tableau[i][j].show_card()
+                self.assertEqual(card.lower(), str(self.game.tableau[i][j]).lower())
+
+    def testdeckToWaste(self):
+        for i in range(len(self.game.mainDeck.deck)*2):
+            if self.game.mainDeck.deck:
+                toWaste = self.game.mainDeck.deck[-1]
+            else: toWaste = self.game.waste[0]
+            self.game.deckToWaste()
+            self.assertEqual(str(toWaste).lower(), str(self.game.waste[-1]).lower())
+
+    def testCheckOrder(self):
+        self.assertTrue(self.game.checkOrder(self.stackOfCard))
+        self.stackOfCard.reverse()
+        self.assertFalse(self.game.checkOrder(self.stackOfCard))
+        self.stackOfCard[3], self.stackOfCard[5] = self.stackOfCard[5], self.stackOfCard[3]
+        self.assertFalse(self.game.checkOrder(self.stackOfCard))
+
+
+    def testCheckColor(self):
+        self.assertTrue(self.game.checkColor(self.stackOfCard))        
+        self.stackOfCard[1].set_suit('c')
+        self.assertFalse(self.game.checkColor(self.stackOfCard))
+        [self.stackOfCard[i].set_suit('c') for i in range(len(self.stackOfCard)) if i%2 == 1]
+        self.assertFalse(self.game.checkColor(self.stackOfCard))
+
+    def testcheckTT(self):
+        self.game.tableau[0][0].set_rank(4)
+        self.game.tableau[0][0].set_suit('s')
+        self.game.tableau[0][0].set_hidden(False)
+        self.game.tableau[1][0].set_rank(5)
+        self.game.tableau[1][0].set_suit('h')
+        self.game.tableau[1][0].set_hidden(False)
+        self.game.tableau[2][0].set_rank(5)
+        self.game.tableau[2][0].set_suit('c')
+        self.game.tableau[3][0].set_rank(6)
+        self.game.tableau[3][0].set_suit('h')
+        self.game.tableau[4][0].set_rank(6)
+        self.game.tableau[4][0].set_suit('c')
+        self.assertTrue(self.game.checkTT(1,1,2))
+        self.assertFalse(self.game.checkTT(1,1,3))
+        self.assertFalse(self.game.checkTT(1,1,4))
+        self.assertFalse(self.game.checkTT(1,1,5))
+                         
+    def testTableauToTableau(self):
+        self.game.tableau[1][0].set_rank(5)
+        self.game.tableau[1][0].set_suit('h')
+        self.game.tableau[2][0].set_rank(6)
+        self.game.tableau[2][0].set_suit('c')
+        self.assertTrue(self.game.tableauToTableau(1,2,3))
+        self.game.tableau[2][0].set_suit('h')
+        self.assertFalse(self.game.tableauToTableau(1,2,3))
+
+    def testcheckCardToFoundation(self):
+        self.game.foundation[1]=[]
+        self.assertTrue(self.game.checkCardToFoundation(Card(1,'S'),2))
+        self.game.foundation[1].append(Card(1,'S'))
+        self.game.foundationSuit[2]='S'
+        self.assertFalse(self.game.checkCardToFoundation(Card(1,'S'),2))
+        self.assertTrue(self.game.checkCardToFoundation(Card(2,'S'),2))        
+
+    def testtableauToFoundation(self):
+        self.game.foundationSuit[1]=[]
+        self.game.tableau[1][0].set_rank(1)
+        self.game.tableau[1][0].set_suit('h')
+        self.assertTrue(self.game.tableauToFoundation(2,2))
+        self.game.tableau[2][0].set_rank(1)
+        self.game.tableau[2][0].set_suit('s')
+        self.assertFalse(self.game.tableauToFoundation(3,2))
+        self.game.tableau[2][0].set_suit('h')
+        self.assertFalse(self.game.tableauToFoundation(3,2))
+        self.game.tableau[5]=[]
+        self.assertFalse(self.game.tableauToFoundation(6,2))
+
+    def testwasteToFoundation(self):
+        self.game.waste=[]
+        self.assertFalse(self.game.checkWT(4))
+        self.game.waste.append(Card(6,'s'))
+        self.game.tableau[3][0].set_rank(7)
+        self.game.tableau[3][0].set_suit('h')
+        self.assertTrue(self.game.checkWT(4))
+        self.game.tableau[3][0].set_suit('s')
+        self.assertFalse(self.game.checkWT(4))
+        self.game.waste.append(Card(13,'d'))
+        self.assertFalse(self.game.checkWT(4))
+        self.game.tableau[6]=[]
+        self.assertTrue(self.game.checkWT(7))
+
+
+    def testcheckWT(self):#Gao
+        self.game.waste=[]
+        self.assertFalse(self.game.checkWT(4))
+        self.game.waste.append(Card(6,'s'))
+        self.game.tableau[3][0].set_rank(7)
+        self.game.tableau[3][0].set_suit('h')
+        self.assertTrue(self.game.checkWT(4))
+        self.game.tableau[3][0].set_suit('s')
+        self.assertFalse(self.game.checkWT(4))
+        self.game.waste.append(Card(13,'d'))
+        self.assertFalse(self.game.checkWT(4))
+        self.game.tableau[6]=[]
+        self.assertTrue(self.game.checkWT(7))
+
+        
+    def testWasteToTableau(self):
+        card = Card()
+        card.set_rank(2)
+        card.set_suit('s')
+        self.game.waste.append(card)
+        self.game.tableau[3][0].set_rank(3)
+        self.game.tableau[3][0].set_suit('h')       
+        self.assertTrue(self.game.wasteToTableau(4))
+
+
+    def testCheckWin(self):
+        self.assertFalse(self.game.checkWin())
+        for i in range(len(self.game.tableau)):
+            self.game.tableau[i] = []
+        self.assertFalse(self.game.checkWin())
+        self.game.waste = []
+        self.assertFalse(self.game.checkWin())
+        self.game.mainDeck.deck = []
+        self.assertTrue(self.game.checkWin())
+        
+        
+
+
+unittest.main()
